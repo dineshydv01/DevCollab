@@ -13,7 +13,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const required = ["PORT", "MONGO_URI", "CLIENT_URL"];
+const required = ["PORT", "MONGO_URI", "CLIENT_URL", "JWT_SECRET"];
 
 for (const key of required) {
   if (!process.env[key]) {
@@ -29,9 +29,9 @@ export const env = {
   mongoUri: process.env.MONGO_URI,
   clientUrl: process.env.CLIENT_URL,
   nodeEnv: process.env.NODE_ENV || "development",
-  // These will be validated as "required" starting in Phase 3 (Auth),
-  // once JWT-based login actually exists. No point demanding them yet.
   jwtSecret: process.env.JWT_SECRET,
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  // --- Added in Phase 13 (GitHub Integration) ---
   githubClientId: process.env.GITHUB_CLIENT_ID,
   githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
 };
