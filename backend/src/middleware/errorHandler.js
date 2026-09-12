@@ -13,6 +13,14 @@
 import { env } from "../config/env.js";
 
 export function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-vars
+  // Mongoose CastError — e.g. someone passed "abc123" where a valid
+  // ObjectId was expected in a route param. Without this, it would
+  // fall through to the generic 500 case, which is misleading — this
+  // is a client mistake (bad input), not a server failure.
+  if (err.name === "CastError") {
+    return res.status(400).json({ success: false, message: `Invalid ${err.path}: ${err.value}` });
+  }
+
   // Mongoose validation errors (e.g. failed schema validators)
   if (err.name === "ValidationError") {
     const messages = Object.values(err.errors).map((e) => e.message);
