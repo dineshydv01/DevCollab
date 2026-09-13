@@ -2,6 +2,7 @@ import { Router } from "express";
 import { getUserById, updateProfile, listUsers } from "../controllers/user.controller.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { validate } from "../middleware/validate.js";
+import { validateObjectId } from "../middleware/validateObjectId.js";
 import { updateProfileSchema } from "../validators/user.validator.js";
 
 const router = Router();
@@ -16,6 +17,6 @@ router.get("/", authenticate, listUsers);
 router.put("/profile", authenticate, validate(updateProfileSchema), updateProfile);
 
 // GET /api/users/:id — public profile view
-router.get("/:id", getUserById);
+router.get("/:id", validateObjectId("id"), getUserById);
 
 export default router;

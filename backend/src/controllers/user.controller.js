@@ -4,17 +4,12 @@
 //      service file. That changes in Phase 7, where matching involves
 //      real algorithmic work worth isolating.
 
-import mongoose from "mongoose";
 import { User } from "../models/User.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
 
 export const getUserById = asyncHandler(async function getUserById(req, res) {
   const { id } = req.params;
-
-  if (!mongoose.isValidObjectId(id)) {
-    return res.status(400).json({ success: false, message: "Invalid user ID" });
-  }
 
   const user = await User.findById(id);
 
