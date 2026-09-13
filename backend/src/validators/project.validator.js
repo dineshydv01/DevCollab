@@ -21,6 +21,9 @@ const CATEGORIES = [
 ];
 
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
+const STATUSES = ["Recruiting", "Active", "Completed", "Archived"];
+
+export { CATEGORIES, DIFFICULTIES, STATUSES };
 
 export const createProjectSchema = z.object({
   title: z.string().trim().min(3).max(120),

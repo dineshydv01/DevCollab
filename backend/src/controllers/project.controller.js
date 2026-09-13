@@ -6,7 +6,7 @@
 
 import { Project } from "../models/Project.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
+import { searchProjects } from "../services/project.service.js";
 
 export const createProject = asyncHandler(async function createProject(req, res) {
   const project = await Project.create({
@@ -27,23 +27,15 @@ export const getProjectById = asyncHandler(async function getProjectById(req, re
 });
 
 export const listProjects = asyncHandler(async function listProjects(req, res) {
-  const { page, limit, skip } = parsePagination(req.query);
-
-  // No filtering yet by category/skills/status/search — that's Phase 6.
-  // This is intentionally the simplest possible listing for now.
-  const [projects, total] = await Promise.all([
-    Project.find()
-      .populate("owner", "fullName username profileImage")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
-    Project.countDocuments(),
-  ]);
+  // Handles search (?q=), filters (?category=, ?skills=, ?difficulty=,
+  // ?status=), and sorting (?sort=newest|popular) — see
+  // services/project.service.js for how each of those works.
+  const { projects, meta } = await searchProjects(req.query);
 
   res.status(200).json({
     success: true,
     data: projects,
-    ...buildPaginationMeta(page, limit, total),
+    ...meta,
   });
 });
 
