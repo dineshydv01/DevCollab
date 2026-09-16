@@ -15,6 +15,7 @@ import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import projectRoutes from "./routes/project.routes.js";
+import applicationRoutes from "./routes/application.routes.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -35,6 +36,7 @@ export function createApp() {
   app.use("/api/auth", authRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/projects", projectRoutes);
+  app.use("/api/applications", applicationRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

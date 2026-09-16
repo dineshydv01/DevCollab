@@ -18,6 +18,7 @@
 import { Project } from "../models/Project.model.js";
 import { normalizeSkills } from "../utils/normalizeSkill.js";
 import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
+import { createHttpError } from "../utils/httpError.js";
 import { CATEGORIES, DIFFICULTIES, STATUSES } from "../validators/project.validator.js";
 
 // Only accept the value if it's actually a string — silently ignore
@@ -144,4 +145,51 @@ export async function searchProjects(query) {
     projects,
     meta: buildPaginationMeta(page, limit, total),
   };
+}
+
+// ---------------------------------------------------------------------
+// Team membership
+// ---------------------------------------------------------------------
+/**
+ * WHAT: Adds a user to a project's team, with the capacity/duplicate
+ *       checks spec section 53 requires ("Team size cannot exceed the
+ *       project limit", no duplicate members).
+ * WHY it lives here, not in collaborationRequest.service.js: accepting
+ *      an application/invitation (Phase 8) isn't the only way someone
+ *      joins a team — Phase 9's dedicated Team Management will reuse
+ *      this exact function too. Membership mutation is fundamentally
+ *      a PROJECT concern, regardless of what triggered it.
+ * WHY re-check capacity here even though the caller may have checked
+ *      already: this is the function that actually performs the
+ *      mutation, so it's the last line of defense against a race
+ *      condition — e.g. two pending applications both being accepted
+ *      in quick succession, each having seen "space available" before
+ *      the other's write landed.
+ */
+export async function addMemberToProject(project, userId) {
+  const alreadyMember = project.members.some(
+    (m) => m.status === "active" && m.user.toString() === userId.toString()
+  );
+  if (alreadyMember) {
+    throw createHttpError(409, "User is already a member of this project");
+  }
+
+  const activeMemberCount = project.members.filter((m) => m.status === "active").length;
+  if (activeMemberCount >= project.teamSize) {
+    throw createHttpError(409, "This project's team is already full");
+  }
+
+  project.members.push({ user: userId });
+
+  // Business rule (spec section 52): once the team reaches full
+  // capacity, the project automatically transitions out of
+  // "Recruiting" — there's no reason to keep accepting new interest
+  // in a team that's already complete.
+  const newActiveCount = activeMemberCount + 1;
+  if (newActiveCount >= project.teamSize && project.status === "Recruiting") {
+    project.status = "Active";
+  }
+
+  await project.save();
+  return project;
 }
