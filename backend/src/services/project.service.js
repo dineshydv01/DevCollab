@@ -193,3 +193,61 @@ export async function addMemberToProject(project, userId) {
   await project.save();
   return project;
 }
+
+/**
+ * WHAT: Updates a specific member's role (e.g. "Frontend Developer").
+ * WHY it lives here alongside addMemberToProject: both mutate
+ *      project.members and share the same "find the active member or
+ *      404" lookup pattern.
+ */
+export async function assignMemberRole(project, userId, role) {
+  const member = project.members.find(
+    (m) => m.status === "active" && m.user.toString() === userId.toString()
+  );
+
+  if (!member) {
+    throw createHttpError(404, "This user is not an active member of the project");
+  }
+
+  member.role = role;
+  await project.save();
+  return project;
+}
+
+/**
+ * WHAT: Removes (soft-removes) a member from the team.
+ * WHY soft-remove (status: "removed") instead of deleting the
+ *      subdocument outright: preserves history — Phase 14's review
+ *      system needs to know someone WAS a teammate even after they've
+ *      left, and an activity feed entry ("X was removed from the
+ *      team") needs something to reference. The status filter already
+ *      used everywhere else (capacity checks, matching exclusions)
+ *      treats "removed" members as if they aren't there, so this is
+ *      safe without any other code changes.
+ * WHY the symmetric status reversion: if removing someone drops an
+ *      "Active" (full) team below capacity, it should reopen for new
+ *      applications — the same logic as the forward transition in
+ *      addMemberToProject, run in reverse. This intentionally only
+ *      moves between Recruiting <-> Active automatically; Completed
+ *      and Archived are treated as deliberate, owner-driven end
+ *      states this function never touches.
+ */
+export async function removeMemberFromProject(project, userId) {
+  const member = project.members.find(
+    (m) => m.status === "active" && m.user.toString() === userId.toString()
+  );
+
+  if (!member) {
+    throw createHttpError(404, "This user is not an active member of the project");
+  }
+
+  member.status = "removed";
+
+  const activeCountAfter = project.members.filter((m) => m.status === "active").length;
+  if (project.status === "Active" && activeCountAfter < project.teamSize) {
+    project.status = "Recruiting";
+  }
+
+  await project.save();
+  return project;
+}

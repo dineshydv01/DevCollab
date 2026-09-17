@@ -13,6 +13,8 @@ import {
   listProjectApplications,
 } from "../controllers/collaborationRequest.controller.js";
 import { applySchema, inviteSchema } from "../validators/collaborationRequest.validator.js";
+import { getProjectTeam, updateMemberRole, removeMember } from "../controllers/team.controller.js";
+import { assignRoleSchema } from "../validators/team.validator.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { validate } from "../middleware/validate.js";
 import { validateObjectId } from "../middleware/validateObjectId.js";
@@ -71,6 +73,33 @@ router.get(
   loadProject,
   isProjectOwner,
   listProjectApplications
+);
+
+// GET /api/projects/:id/team — public: current active team, with
+// member user details populated
+router.get("/:id/team", validateObjectId("id"), loadProject, getProjectTeam);
+
+// PUT /api/projects/:id/team/:userId/role — owner only
+router.put(
+  "/:id/team/:userId/role",
+  authenticate,
+  validateObjectId("id"),
+  validateObjectId("userId"),
+  loadProject,
+  isProjectOwner,
+  validate(assignRoleSchema),
+  updateMemberRole
+);
+
+// DELETE /api/projects/:id/team/:userId — owner only
+router.delete(
+  "/:id/team/:userId",
+  authenticate,
+  validateObjectId("id"),
+  validateObjectId("userId"),
+  loadProject,
+  isProjectOwner,
+  removeMember
 );
 
 // PUT /api/projects/:id — owner only
