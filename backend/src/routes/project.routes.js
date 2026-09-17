@@ -15,6 +15,9 @@ import {
 import { applySchema, inviteSchema } from "../validators/collaborationRequest.validator.js";
 import { getProjectTeam, updateMemberRole, removeMember } from "../controllers/team.controller.js";
 import { assignRoleSchema } from "../validators/team.validator.js";
+import { isProjectMemberOrOwner } from "../middleware/isProjectMemberOrOwner.js";
+import { createProjectTask, listProjectTasks } from "../controllers/task.controller.js";
+import { createTaskSchema } from "../validators/task.validator.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { validate } from "../middleware/validate.js";
 import { validateObjectId } from "../middleware/validateObjectId.js";
@@ -100,6 +103,27 @@ router.delete(
   loadProject,
   isProjectOwner,
   removeMember
+);
+
+// POST /api/projects/:id/tasks — owner only
+router.post(
+  "/:id/tasks",
+  authenticate,
+  validateObjectId("id"),
+  loadProject,
+  isProjectOwner,
+  validate(createTaskSchema),
+  createProjectTask
+);
+
+// GET /api/projects/:id/tasks — owner or any active team member
+router.get(
+  "/:id/tasks",
+  authenticate,
+  validateObjectId("id"),
+  loadProject,
+  isProjectMemberOrOwner,
+  listProjectTasks
 );
 
 // PUT /api/projects/:id — owner only
