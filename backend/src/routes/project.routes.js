@@ -18,6 +18,7 @@ import { assignRoleSchema } from "../validators/team.validator.js";
 import { isProjectMemberOrOwner } from "../middleware/isProjectMemberOrOwner.js";
 import { createProjectTask, listProjectTasks } from "../controllers/task.controller.js";
 import { createTaskSchema } from "../validators/task.validator.js";
+import { listProjectMessages } from "../controllers/message.controller.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { validate } from "../middleware/validate.js";
 import { validateObjectId } from "../middleware/validateObjectId.js";
@@ -124,6 +125,17 @@ router.get(
   loadProject,
   isProjectMemberOrOwner,
   listProjectTasks
+);
+
+// GET /api/projects/:id/messages — owner or any active team member;
+// chat SENDING happens over Socket.IO, not REST (see message.controller.js)
+router.get(
+  "/:id/messages",
+  authenticate,
+  validateObjectId("id"),
+  loadProject,
+  isProjectMemberOrOwner,
+  listProjectMessages
 );
 
 // PUT /api/projects/:id — owner only
