@@ -9,6 +9,7 @@
 import { Task } from "../models/Task.model.js";
 import { isOwnerOf, isActiveMemberOf } from "../utils/projectAuth.js";
 import { createHttpError } from "../utils/httpError.js";
+import { createNotification } from "./notification.service.js";
 
 export function assertValidAssignee(project, assignedTo) {
   if (!assignedTo) return; // unassigned is always fine
@@ -22,9 +23,20 @@ export function assertValidAssignee(project, assignedTo) {
 export async function createTask({ project, createdBy, data }) {
   assertValidAssignee(project, data.assignedTo);
 
-  return Task.create({
+  const task = await Task.create({
     ...data,
     project: project._id,
     createdBy,
   });
+
+  if (task.assignedTo && task.assignedTo.toString() !== createdBy.toString()) {
+    await createNotification({
+      recipient: task.assignedTo,
+      type: "task_assigned",
+      message: `You were assigned to "${task.title}" in "${project.title}"`,
+      referenceId: task._id,
+    });
+  }
+
+  return task;
 }

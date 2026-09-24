@@ -7,6 +7,7 @@
 import { Project } from "../models/Project.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { searchProjects } from "../services/project.service.js";
+import { createNotification } from "../services/notification.service.js";
 
 export const createProject = asyncHandler(async function createProject(req, res) {
   const project = await Project.create({
@@ -59,5 +60,35 @@ export const deleteProject = asyncHandler(async function deleteProject(req, res)
   res.status(200).json({
     success: true,
     message: "Project deleted successfully",
+  });
+});
+
+// PATCH /api/projects/:id/status — a deliberately separate, narrow
+// endpoint from the general updateProject above. See
+// projectStatus.validator.js for why only Completed/Archived are
+// accepted here.
+export const updateProjectStatus = asyncHandler(async function updateProjectStatus(req, res) {
+  req.project.status = req.body.status;
+  await req.project.save();
+
+  // Notify the whole active team when a project wraps up — this is
+  // the one trigger point spec section 22's "project is completed"
+  // needs, which didn't exist before this endpoint did.
+  if (req.body.status === "Completed") {
+    const activeMembers = req.project.members.filter((m) => m.status === "active");
+    for (const member of activeMembers) {
+      await createNotification({
+        recipient: member.user._id || member.user,
+        type: "project_completed",
+        message: `The project "${req.project.title}" has been marked as completed.`,
+        referenceId: req.project._id,
+      });
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Project status updated successfully",
+    data: req.project,
   });
 });

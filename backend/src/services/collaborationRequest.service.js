@@ -9,6 +9,7 @@
 
 import { CollaborationRequest } from "../models/CollaborationRequest.model.js";
 import { addMemberToProject } from "./project.service.js";
+import { createNotification } from "./notification.service.js";
 import { createHttpError } from "../utils/httpError.js";
 
 function getOwnerId(project) {
@@ -53,13 +54,22 @@ export async function createApplication({ project, applicant, message }) {
     throw createHttpError(409, "You already have a pending application for this project");
   }
 
-  return CollaborationRequest.create({
+  const request = await CollaborationRequest.create({
     project: project._id,
     applicant: applicant._id,
     owner: getOwnerId(project),
     type: "application",
     message: message || "",
   });
+
+  await createNotification({
+    recipient: getOwnerId(project),
+    type: "application_received",
+    message: `${applicant.fullName} applied to join "${project.title}"`,
+    referenceId: request._id,
+  });
+
+  return request;
 }
 
 /**
@@ -92,13 +102,22 @@ export async function createInvitation({ project, owner, applicantId, message })
     throw createHttpError(409, "This user already has a pending invitation for this project");
   }
 
-  return CollaborationRequest.create({
+  const request = await CollaborationRequest.create({
     project: project._id,
     applicant: applicantId,
     owner: owner._id,
     type: "invitation",
     message: message || "",
   });
+
+  await createNotification({
+    recipient: applicantId,
+    type: "invitation_received",
+    message: `${owner.fullName} invited you to join "${project.title}"`,
+    referenceId: request._id,
+  });
+
+  return request;
 }
 
 /**
@@ -146,12 +165,59 @@ export async function resolveRequest({ request, project, actorId, action }) {
     // checked capacity when the request was first created.
     await addMemberToProject(project, request.applicant);
     request.status = "accepted";
+    await request.save();
+
+    // Notify whoever DIDN'T just take the accept action — same
+    // "notify the other party" shape as the authorization rule above.
+    if (request.type === "application") {
+      // The owner accepted; tell the applicant they're on the team now.
+      await createNotification({
+        recipient: request.applicant,
+        type: "team_joined",
+        message: `You've joined the project "${project.title}"!`,
+        referenceId: project._id,
+      });
+    } else {
+      // The applicant accepted an invitation; tell the owner it was
+      // accepted, AND tell the applicant they've joined (both are
+      // genuinely useful — one confirms an action, the other confirms
+      // a new status).
+      await createNotification({
+        recipient: request.owner,
+        type: "invitation_accepted",
+        message: `Your invitation to join "${project.title}" was accepted`,
+        referenceId: project._id,
+      });
+      await createNotification({
+        recipient: request.applicant,
+        type: "team_joined",
+        message: `You've joined the project "${project.title}"!`,
+        referenceId: project._id,
+      });
+    }
   } else if (action === "reject") {
     request.status = "rejected";
+    await request.save();
+
+    if (request.type === "application") {
+      await createNotification({
+        recipient: request.applicant,
+        type: "application_rejected",
+        message: `Your application to "${project.title}" was declined`,
+        referenceId: project._id,
+      });
+    } else {
+      await createNotification({
+        recipient: request.owner,
+        type: "invitation_rejected",
+        message: `Your invitation to join "${project.title}" was declined`,
+        referenceId: project._id,
+      });
+    }
   } else {
     request.status = "cancelled";
+    await request.save();
   }
 
-  await request.save();
   return request;
 }

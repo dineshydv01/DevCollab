@@ -17,6 +17,7 @@ import userRoutes from "./routes/user.routes.js";
 import projectRoutes from "./routes/project.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
 import taskRoutes from "./routes/task.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -39,6 +40,7 @@ export function createApp() {
   app.use("/api/projects", projectRoutes);
   app.use("/api/applications", applicationRoutes);
   app.use("/api/tasks", taskRoutes);
+  app.use("/api/notifications", notificationRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

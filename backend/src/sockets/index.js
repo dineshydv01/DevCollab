@@ -17,6 +17,8 @@ import { User } from "../models/User.model.js";
 import { Project } from "../models/Project.model.js";
 import { Message } from "../models/Message.model.js";
 import { isOwnerOf, isActiveMemberOf } from "../utils/projectAuth.js";
+import { setIO } from "./ioInstance.js";
+import { createNotification } from "../services/notification.service.js";
 
 const roomName = (projectId) => `project:${projectId}`;
 
@@ -37,6 +39,11 @@ export function initializeSocket(httpServer) {
       credentials: true,
     },
   });
+
+  // Makes this exact `io` instance reachable from REST controllers/
+  // services (e.g. notification.service.js) that have no other way to
+  // get at it — see ioInstance.js for why this exists.
+  setIO(io);
 
   // --- Authentication ---
   // Deliberately mirrors the REST `authenticate` middleware: same
@@ -73,6 +80,13 @@ export function initializeSocket(httpServer) {
       profileImage: socket.user.profileImage,
     });
     socket.data.joinedRooms = new Set();
+
+    // Every authenticated socket automatically joins its OWN personal
+    // room, separate from any project room it joins later. This is
+    // what lets notification.service.js reach "all of this user's
+    // active tabs/devices" with io.to(`user:${id}`).emit(...),
+    // regardless of which project chats they do or don't have open.
+    socket.join(`user:${socket.user._id}`);
 
     // --- Join a project's chat room ---
     // Spec section 48's exact requirement: authenticate the socket
@@ -177,6 +191,57 @@ export function initializeSocket(httpServer) {
         // optimistically render your own message differently).
         io.to(room).emit("chat:message", payload);
         callback?.({ success: true, data: payload });
+
+        // --- Notifications ---
+        // Deliberately skip anyone CURRENTLY connected to this room —
+        // they're already seeing the message live, a notification
+        // would just be noise. This reuses the exact same "who's in
+        // this room right now" lookup as the presence logic above,
+        // for a genuinely different purpose.
+        const project = await Project.findById(projectId)
+          .populate("members.user", "username")
+          .populate("owner", "username");
+
+        if (project) {
+          const mentionedUsernames = new Set(
+            (trimmed.match(/@([a-z0-9_]+)/gi) || []).map((m) => m.slice(1).toLowerCase())
+          );
+
+          const socketIdsInRoom = io.sockets.adapter.rooms.get(room) || new Set();
+          const onlineUserIds = new Set(
+            Array.from(socketIdsInRoom)
+              .map((sid) => socketUsers.get(sid)?.id)
+              .filter(Boolean)
+          );
+
+          const recipients = project.members
+            .filter((m) => m.status === "active")
+            .map((m) => ({
+              id: (m.user._id || m.user).toString(),
+              username: m.user.username,
+            }));
+
+          const ownerId = (project.owner._id || project.owner).toString();
+          if (!recipients.some((r) => r.id === ownerId)) {
+            recipients.push({ id: ownerId, username: project.owner.username });
+          }
+
+          for (const recipient of recipients) {
+            if (recipient.id === socket.user._id.toString()) continue; // never notify yourself
+            if (onlineUserIds.has(recipient.id)) continue; // actively viewing this chat right now
+
+            const isMentioned = recipient.username && mentionedUsernames.has(recipient.username.toLowerCase());
+
+            await createNotification({
+              recipient: recipient.id,
+              type: isMentioned ? "mention" : "new_message",
+              message: isMentioned
+                ? `${socket.user.username} mentioned you in "${project.title}"`
+                : `New message from ${socket.user.username} in "${project.title}"`,
+              referenceId: message._id,
+            });
+          }
+        }
       } catch (err) {
         callback?.({ success: false, message: "Failed to send message" });
       }

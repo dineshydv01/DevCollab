@@ -4,8 +4,10 @@ import {
   getProjectById,
   listProjects,
   updateProject,
+  updateProjectStatus,
   deleteProject,
 } from "../controllers/project.controller.js";
+import { updateProjectStatusSchema } from "../validators/projectStatus.validator.js";
 import { getProjectMatches } from "../controllers/matching.controller.js";
 import {
   applyToProject,
@@ -136,6 +138,17 @@ router.get(
   loadProject,
   isProjectMemberOrOwner,
   listProjectMessages
+);
+
+// PATCH /api/projects/:id/status — owner only, Completed/Archived only
+router.patch(
+  "/:id/status",
+  authenticate,
+  validateObjectId("id"),
+  loadProject,
+  isProjectOwner,
+  validate(updateProjectStatusSchema),
+  updateProjectStatus
 );
 
 // PUT /api/projects/:id — owner only
