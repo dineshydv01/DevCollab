@@ -1,12 +1,18 @@
 // WHAT: A collaborative project someone wants to build a team around.
-// WHY this schema shape: see the "why embedded, not a separate
-//      collection" reasoning for `members` discussed in Phase 5, and
-//      the GitHub cache fields' own comment below for a bug fix made
-//      in Phase 13.
+// WHY: This is the second core entity — almost everything from Phase 7
+//      onward (matching, applications, tasks, chat) revolves around a
+//      Project document.
+// HOW: A schema with an embedded `members` sub-document array (see the
+//      "why embedded, not a separate collection" reasoning above the
+//      code), a text index for search, and category/status enums that
+//      encode the business rules from spec section 52.
 
 import mongoose from "mongoose";
 import { normalizeSkills } from "../utils/normalizeSkill.js";
 
+// Sub-schema for a single team member. `_id: false` because we don't
+// need to reference a member independently of its parent project —
+// we always access members through project.members.
 const memberSchema = new mongoose.Schema(
   {
     user: {
@@ -15,7 +21,7 @@ const memberSchema = new mongoose.Schema(
       required: true,
     },
     role: {
-      type: String,
+      type: String, // e.g. "Frontend Developer", "Backend Developer"
       trim: true,
       default: "",
     },
@@ -84,7 +90,7 @@ const projectSchema = new mongoose.Schema(
       required: true,
     },
     duration: {
-      type: String,
+      type: String, // free text, e.g. "4 weeks", "2 months" — no fixed unit imposed
       trim: true,
       default: "",
     },
@@ -104,6 +110,10 @@ const projectSchema = new mongoose.Schema(
       default: [],
     },
 
+    // Lifecycle state — business rules for each are enforced in the
+    // Project service layer (Phase 5/9), not here. The schema only
+    // constrains which values are *valid*, not when transitions
+    // between them are *allowed*.
     status: {
       type: String,
       enum: ["Recruiting", "Active", "Completed", "Archived"],
@@ -123,13 +133,6 @@ const projectSchema = new mongoose.Schema(
     // "last known good" data if a live refresh fails (rate limit,
     // network error, GitHub outage), which is real graceful
     // degradation rather than just showing an error.
-    //
-    // WHY githubCacheUrl exists (bug fix): the cache is only valid
-    // for the SPECIFIC repositoryUrl it was fetched for. Without
-    // this field, changing which repo is attached would still serve
-    // the OLD repo's cached stats for up to 15 minutes, because the
-    // freshness check only looked at a timestamp — not at whether the
-    // cached data was even for the right repository anymore.
     githubCache: {
       type: mongoose.Schema.Types.Mixed,
       default: null,
@@ -138,17 +141,20 @@ const projectSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    githubCacheUrl: {
-      type: String,
-      default: null,
-    },
   },
   {
     timestamps: true,
   }
 );
 
+// --- Indexes ---
+// Text index on title + description powers the project search feature
+// (spec section 11) — lets MongoDB do relevance-ranked text search
+// instead of us writing manual regex matching.
 projectSchema.index({ title: "text", description: "text" });
+
+// Supports filtering by category/status/skills on the discovery page
+// (section 10) without a full collection scan.
 projectSchema.index({ category: 1 });
 projectSchema.index({ status: 1 });
 projectSchema.index({ requiredSkills: 1 });
