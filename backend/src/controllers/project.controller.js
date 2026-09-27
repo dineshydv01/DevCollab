@@ -5,6 +5,7 @@
 //      These functions only need to do the one thing they're named for.
 
 import { Project } from "../models/Project.model.js";
+import { User } from "../models/User.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { searchProjects } from "../services/project.service.js";
 import { createNotification } from "../services/notification.service.js";
@@ -76,6 +77,16 @@ export const updateProjectStatus = asyncHandler(async function updateProjectStat
   // needs, which didn't exist before this endpoint did.
   if (req.body.status === "Completed") {
     const activeMembers = req.project.members.filter((m) => m.status === "active");
+    const allParticipantIds = [
+      req.project.owner._id || req.project.owner,
+      ...activeMembers.map((m) => m.user._id || m.user),
+    ];
+
+    // Closes a gap from Phase 2: User.completedProjects has existed
+    // since the very first model but nothing ever incremented it
+    // until this trigger point (project completion) existed.
+    await User.updateMany({ _id: { $in: allParticipantIds } }, { $inc: { completedProjects: 1 } });
+
     for (const member of activeMembers) {
       await createNotification({
         recipient: member.user._id || member.user,

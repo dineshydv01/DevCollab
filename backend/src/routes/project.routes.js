@@ -29,6 +29,9 @@ import { loadProject } from "../middleware/loadProject.js";
 import { isProjectOwner } from "../middleware/isProjectOwner.js";
 import { createProjectSchema, updateProjectSchema } from "../validators/project.validator.js";
 
+import { createProjectReview } from "../controllers/review.controller.js";
+import { createReviewSchema } from "../validators/review.validator.js";
+
 const router = Router();
 
 // GET /api/projects — public listing
@@ -69,6 +72,18 @@ router.post(
   isProjectOwner,
   validate(inviteSchema),
   inviteToProject
+);
+
+// POST /api/projects/:id/reviews — any past/present teammate; full
+// eligibility logic (completion check, self-review, team membership)
+// lives in review.service.js, not route middleware
+router.post(
+  "/:id/reviews",
+  authenticate,
+  validateObjectId("id"),
+  loadProject,
+  validate(createReviewSchema),
+  createProjectReview
 );
 
 // GET /api/projects/:id/applications — owner only (both applications
