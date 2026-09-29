@@ -7,7 +7,7 @@
 import { Project } from "../models/Project.model.js";
 import { User } from "../models/User.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { searchProjects } from "../services/project.service.js";
+import { searchProjects, deleteProjectCascade } from "../services/project.service.js";
 import { createNotification } from "../services/notification.service.js";
 
 export const createProject = asyncHandler(async function createProject(req, res) {
@@ -56,7 +56,10 @@ export const updateProject = asyncHandler(async function updateProject(req, res)
 });
 
 export const deleteProject = asyncHandler(async function deleteProject(req, res) {
-  await req.project.deleteOne();
+  // Cascade delete (added Phase 15): previously this only removed the
+  // project itself, leaving its tasks, chat messages, applications,
+  // and reviews orphaned in the database forever.
+  await deleteProjectCascade(req.project);
 
   res.status(200).json({
     success: true,

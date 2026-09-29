@@ -18,6 +18,8 @@ import projectRoutes from "./routes/project.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
 import taskRoutes from "./routes/task.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import reportRoutes from "./routes/report.routes.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -41,6 +43,8 @@ export function createApp() {
   app.use("/api/applications", applicationRoutes);
   app.use("/api/tasks", taskRoutes);
   app.use("/api/notifications", notificationRoutes);
+  app.use("/api/admin", adminRoutes);
+  app.use("/api/reports", reportRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

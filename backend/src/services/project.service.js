@@ -21,6 +21,30 @@ import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
 import { createHttpError } from "../utils/httpError.js";
 import { CATEGORIES, DIFFICULTIES, STATUSES } from "../validators/project.validator.js";
 
+
+import { Task } from "../models/Task.model.js";
+import { Message } from "../models/Message.model.js";
+import { CollaborationRequest } from "../models/CollaborationRequest.model.js";
+import { Review } from "../models/Review.model.js";
+
+
+// WHAT: Deletes a project AND everything that references it.
+// WHY (Phase 15): previously deleting a project only removed the
+// Project document itself, leaving its tasks, chat messages,
+// applications, and reviews as orphaned data forever. Both the
+// owner-initiated delete (project.controller.js) and the admin
+// override (admin.controller.js) now share this one function, so
+// there's exactly one place cascade behavior is defined.
+export async function deleteProjectCascade(project) {
+  await Promise.all([
+    Task.deleteMany({ project: project._id }),
+    Message.deleteMany({ project: project._id }),
+    CollaborationRequest.deleteMany({ project: project._id }),
+    Review.deleteMany({ project: project._id }),
+  ]);
+  await project.deleteOne();
+}
+
 // Only accept the value if it's actually a string — silently ignore
 // anything else (objects, arrays where a scalar was expected, etc.)
 // rather than letting it reach a Mongo query.
