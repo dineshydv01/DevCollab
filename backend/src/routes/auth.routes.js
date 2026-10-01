@@ -3,12 +3,12 @@ import { register, login, logout, getMe } from "../controllers/auth.controller.j
 import { validate } from "../middleware/validate.js";
 import { registerSchema, loginSchema } from "../validators/auth.validator.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { loginRateLimiter } from "../middleware/rateLimiters.js";
+import { loginRateLimiter, registerRateLimiter } from "../middleware/rateLimiters.js";
 
 const router = Router();
 
 // POST /api/auth/register
-router.post("/register", validate(registerSchema), register);
+router.post("/register", registerRateLimiter, validate(registerSchema), register);
 
 // POST /api/auth/login
 router.post("/login", loginRateLimiter, validate(loginSchema), login);
