@@ -154,9 +154,22 @@ projectSchema.index({ status: 1 });
 projectSchema.index({ requiredSkills: 1 });
 projectSchema.index({ owner: 1 });
 
+// Phase 18 optimization: githubCache/githubCacheUpdatedAt/githubCacheUrl
+// are internal bookkeeping for the caching strategy in github.service.js
+// — they're read directly off the Mongoose DOCUMENT in server-side code
+// (never via JSON), so hiding them from the client-facing response has
+// zero effect on server logic. What it DOES do: shrinks every project
+// API response (list and detail) by excluding a field that can hold a
+// non-trivial GitHub API snapshot, and steers clients toward the
+// dedicated GET /:id/github endpoint — which correctly handles
+// freshness/staleness — rather than reading a cache blob embedded in
+// an unrelated response that might be stale without any indication.
 projectSchema.set("toJSON", {
   transform: (_doc, ret) => {
     delete ret.__v;
+    delete ret.githubCache;
+    delete ret.githubCacheUpdatedAt;
+    delete ret.githubCacheUrl;
     return ret;
   },
 });

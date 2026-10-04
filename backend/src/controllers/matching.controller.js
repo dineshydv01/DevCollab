@@ -4,7 +4,8 @@
 //      candidates from MongoDB is a database concern; SCORING them is
 //      a pure algorithmic concern. Keeping them separate means
 //      matching.service.js has zero dependency on Mongoose and can be
-//      unit tested with plain JavaScript objects (as we just did).
+//      unit tested with plain JavaScript objects (as Phase 17's test
+//      suite does).
 
 import { User } from "../models/User.model.js";
 import { findTopMatches } from "../services/matching.service.js";
@@ -29,12 +30,19 @@ export const getProjectMatches = asyncHandler(async function getProjectMatches(r
   const excludedIds = new Set(project.members.map((m) => m.user.toString()));
   excludedIds.add(project.owner._id ? project.owner._id.toString() : project.owner.toString());
 
-  // Pull the full candidate pool: real developers, not suspended.
-  // We can't push the "already a member" exclusion into this MongoDB
-  // query efficiently (it would need an $nin against a possibly large,
-  // frequently-changing array), so it's applied in memory via the Set
-  // built above instead.
-  const allDevelopers = await User.find({ role: "developer", isSuspended: false });
+  // Phase 18 optimization: project only the fields computeMatchScore()
+  // and the response payload actually need (skills, experienceLevel,
+  // availability, preferredRoles for scoring; fullName/username/
+  // profileImage for display). Previously this fetched EVERY field on
+  // every developer in the database — bio, location, interests,
+  // githubUsername, linkedinUrl, portfolioUrl, rating, etc. — none of
+  // which the matching algorithm or its response use. This shrinks
+  // both the data transferred from MongoDB and the response sent to
+  // the client, without changing which candidates are considered or
+  // how they're scored (same semantics, less weight).
+  const allDevelopers = await User.find({ role: "developer", isSuspended: false }).select(
+    "fullName username profileImage skills experienceLevel availability preferredRoles"
+  );
   const candidates = allDevelopers.filter((dev) => !excludedIds.has(dev._id.toString()));
 
   const matches = findTopMatches(project, candidates, limit);
