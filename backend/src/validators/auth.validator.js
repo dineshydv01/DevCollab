@@ -1,11 +1,3 @@
-// WHAT: Defines exactly what a valid register/login request body looks
-//       like, using Zod — a schema library, similar in spirit to how
-//       Mongoose schemas describe valid documents.
-// WHY: Section 34 requires backend validation regardless of what the
-//      frontend does. Centralizing the RULES here (separate from the
-//      middleware that RUNS them) means the same schema could also be
-//      reused in tests, or on the frontend with React Hook Form later.
-
 import { z } from "zod";
 
 export const registerSchema = z
@@ -27,7 +19,19 @@ export const registerSchema = z
     path: ["confirmPassword"],
   });
 
+// WHAT: login now accepts EITHER an email address OR a username in
+// the same field.
+// WHY the field is still called "email" (not renamed to something
+// like "identifier"): every existing client and test script already
+// sends { email, password } to this endpoint — renaming the field
+// would be a breaking change across ~14 already-verified test scripts
+// and the Vitest integration suite for a convenience feature that
+// doesn't require it. Strict .email() format validation was dropped
+// here specifically (registerSchema's email field above is unchanged
+// and still requires real email format) since a username wouldn't
+// pass it. The login controller checks the value against BOTH
+// User.email and User.username.
 export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Please provide a valid email"),
+  email: z.string().trim().toLowerCase().min(1, "Email or username is required"),
   password: z.string().min(1, "Password is required"),
 });

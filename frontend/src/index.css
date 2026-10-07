@@ -1,1 +1,35 @@
 @import "tailwindcss";
+
+/* Design tokens — see the F1 design plan: a dev-tool-appropriate
+   palette (not the generic AI-default warm-cream/terracotta or
+   near-black/neon combos), Space Grotesk for display type, IBM Plex
+   Sans for body, IBM Plex Mono for data-ish bits (skill tags, stats). */
+@theme {
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f5f6f8;
+  --color-ink: #13161c;
+  --color-ink-muted: #5b6472;
+  --color-accent: #e3a008;
+  --color-accent-ink: #1a1200;
+  --color-link: #3b4cca;
+  --color-border: #e4e7ec;
+  --color-danger: #d1453b;
+  --color-success: #1a7f5a;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+}

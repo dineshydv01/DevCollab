@@ -1,17 +1,24 @@
-import HealthStatus from "./components/HealthStatus";
+import { Routes, Route } from "react-router-dom";
+import HomePage from "./pages/HomePage.jsx";
+import LoginPage from "./pages/LoginPage.jsx";
+import RegisterPage from "./pages/RegisterPage.jsx";
+import DashboardPage from "./pages/DashboardPage.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import PublicOnlyRoute from "./components/PublicOnlyRoute.jsx";
 
-// Phase 1 placeholder. React Router and real pages arrive in later
-// phases (Landing, Login, Dashboard, etc. per spec section 29).
 export default function App() {
   return (
-    <main className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-6 px-4">
-      <div className="text-center">
-        <h1 className="text-3xl font-semibold text-slate-900">DevCollab</h1>
-        <p className="text-slate-500">Developer Project Collaboration & Team Matching Platform</p>
-      </div>
-      <div className="w-full max-w-sm">
-        <HealthStatus />
-      </div>
-    </main>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+
+      <Route element={<PublicOnlyRoute />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+      </Route>
+
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+      </Route>
+    </Routes>
   );
 }
