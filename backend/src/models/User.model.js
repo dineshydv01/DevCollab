@@ -42,13 +42,30 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: [
+        function () {
+          return !this.googleId && !this.githubId;
+        },
+        "Password is required",
+      ],
       minlength: 8,
-      // select: false means .find()/.findOne() never return this field
-      // unless a query explicitly asks for it with .select('+password').
-      // This makes it hard to accidentally leak password hashes in an
-      // API response.
       select: false,
+    },
+
+    googleId: {
+      type: String,
+      default: null,
+      sparse: true,
+    },
+    githubId: {
+      type: String,
+      default: null,
+      sparse: true,
+    },
+    authProvider: {
+      type: String,
+      enum: ["local", "google", "github"],
+      default: "local",
     },
 
     // Site-wide role — NOT the same as "project owner" (see explanation
@@ -123,7 +140,7 @@ userSchema.index({ skills: 1 });
 // the password field actually changed — otherwise updating a user's
 // bio would re-hash an already-hashed password and break their login.
 userSchema.pre("save", async function hashPasswordIfChanged() {
-  if (!this.isModified("password")) return;
+  if (!this.password || !this.isModified("password")) return;
 
   // No next() here on purpose: this is an async function, so Mongoose
   // treats its returned Promise as the completion signal. Mixing
@@ -139,6 +156,7 @@ userSchema.pre("save", async function hashPasswordIfChanged() {
 // concern — keeping it here means Phase 3's auth controller stays
 // thin and just calls `user.comparePassword(...)`.
 userSchema.methods.comparePassword = function comparePassword(candidatePassword) {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 

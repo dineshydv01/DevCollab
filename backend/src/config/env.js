@@ -35,7 +35,9 @@ export const env = {
   // (60 requests/hour per IP — fine for local dev/demo). With a
   // personal access token, that rises to 5,000/hour. Never required.
   githubToken: process.env.GITHUB_TOKEN || null,
-  // --- Added in Phase 13 (GitHub Integration) ---
-  githubClientId: process.env.GITHUB_CLIENT_ID,
-  githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
+  // --- Added in Phase 13 & OAuth ---
+  githubClientId: process.env.GITHUB_CLIENT_ID || null,
+  githubClientSecret: process.env.GITHUB_CLIENT_SECRET || null,
+  googleClientId: process.env.GOOGLE_CLIENT_ID || null,
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || null,
 };

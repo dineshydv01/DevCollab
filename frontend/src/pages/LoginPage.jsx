@@ -1,13 +1,15 @@
-import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import Input from "../components/ui/Input.jsx";
 import Button from "../components/ui/Button.jsx";
+import { GithubIcon, GoogleIcon } from "../components/ui/Icons.jsx";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   // Named "identifier" here since it can be either an email or a
   // username (see auth.validator.js's loginSchema for why the
@@ -16,6 +18,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const paramError = searchParams.get("error");
+    if (paramError) {
+      setError(decodeURIComponent(paramError));
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -57,7 +66,34 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
+          {/* OAuth Buttons */}
+          <div className="mt-6 flex flex-col gap-2.5">
+            <a
+              href="/api/auth/github"
+              className="inline-flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-white py-2.5 px-4 text-xs font-semibold text-ink shadow-2xs hover:bg-bg-subtle transition-colors"
+            >
+              <GithubIcon className="h-4 w-4" />
+              Continue with GitHub
+            </a>
+            <a
+              href="/api/auth/google"
+              className="inline-flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-white py-2.5 px-4 text-xs font-semibold text-ink shadow-2xs hover:bg-bg-subtle transition-colors"
+            >
+              <GoogleIcon className="h-4 w-4" />
+              Continue with Google
+            </a>
+          </div>
+
+          <div className="relative my-6 text-center text-xs text-ink-muted">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <span className="relative bg-white px-2 uppercase font-mono text-[10px]">
+              or with credentials
+            </span>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               id="identifier"
               type="text"
@@ -76,7 +112,11 @@ export default function LoginPage() {
               required
             />
 
-            {error && <p className="text-sm text-danger">{error}</p>}
+            {error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-danger">
+                {error}
+              </div>
+            )}
 
             <Button type="submit" variant="accent" disabled={isSubmitting} className="mt-2 w-full">
               {isSubmitting ? "Logging in…" : "Log in"}
