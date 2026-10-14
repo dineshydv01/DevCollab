@@ -269,3 +269,56 @@ export async function handleGoogleCallback(code, req) {
 
   return user;
 }
+
+// -----------------------------------------------------------------------------
+// Development Simulation (Runs ONLY when NODE_ENV === 'development' & no keys set)
+// -----------------------------------------------------------------------------
+export async function getOrCreateDevOAuthUser(provider) {
+  if (provider === "google") {
+    let user = await User.findOne({ googleId: "dev_google_id_1001" });
+    if (!user) {
+      user = await User.findOne({ email: "google.developer@example.com" });
+    }
+    if (!user) {
+      user = await User.create({
+        fullName: "Google Developer",
+        username: "google_dev",
+        email: "google.developer@example.com",
+        googleId: "dev_google_id_1001",
+        profileImage: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        bio: "Full-stack engineer using Google OAuth authentication.",
+        skills: ["React", "Node.js", "TypeScript", "Google Cloud"],
+        experienceLevel: "Intermediate",
+        availability: 20,
+        preferredRoles: ["Fullstack Developer"],
+        authProvider: "google",
+        role: "developer",
+      });
+    }
+    return user;
+  }
+
+  // provider === 'github'
+  let user = await User.findOne({ githubId: "dev_github_id_2002" });
+  if (!user) {
+    user = await User.findOne({ email: "github.developer@example.com" });
+  }
+  if (!user) {
+    user = await User.create({
+      fullName: "GitHub Developer",
+      username: "github_dev",
+      email: "github.developer@example.com",
+      githubId: "dev_github_id_2002",
+      githubUsername: "github_dev",
+      profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      bio: "Open-source contributor signed in via GitHub OAuth.",
+      skills: ["React", "Express", "MongoDB", "Git"],
+      experienceLevel: "Advanced",
+      availability: 25,
+      preferredRoles: ["Backend Engineer"],
+      authProvider: "github",
+      role: "developer",
+    });
+  }
+  return user;
+}

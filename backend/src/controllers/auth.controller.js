@@ -7,6 +7,7 @@ import {
   handleGitHubCallback,
   getGoogleOAuthUrl,
   handleGoogleCallback,
+  getOrCreateDevOAuthUser,
 } from "../services/oauth.service.js";
 import { env } from "../config/env.js";
 
@@ -78,6 +79,19 @@ export const getMe = asyncHandler(async function getMe(req, res) {
 });
 
 export const githubAuthRedirect = asyncHandler(async function githubAuthRedirect(req, res) {
+  if (!env.githubClientId || !env.githubClientSecret) {
+    if (env.nodeEnv === "development") {
+      const user = await getOrCreateDevOAuthUser("github");
+      const token = generateAccessToken(user._id);
+      res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions());
+      return res.redirect(`${env.clientUrl}/dashboard`);
+    }
+    const errorMsg = encodeURIComponent(
+      "GitHub OAuth is not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in backend/.env"
+    );
+    return res.redirect(`${env.clientUrl}/login?error=${errorMsg}`);
+  }
+
   try {
     const url = getGitHubOAuthUrl(req);
     res.redirect(url);
@@ -111,6 +125,19 @@ export const githubAuthCallback = asyncHandler(async function githubAuthCallback
 });
 
 export const googleAuthRedirect = asyncHandler(async function googleAuthRedirect(req, res) {
+  if (!env.googleClientId || !env.googleClientSecret) {
+    if (env.nodeEnv === "development") {
+      const user = await getOrCreateDevOAuthUser("google");
+      const token = generateAccessToken(user._id);
+      res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions());
+      return res.redirect(`${env.clientUrl}/dashboard`);
+    }
+    const errorMsg = encodeURIComponent(
+      "Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend/.env"
+    );
+    return res.redirect(`${env.clientUrl}/login?error=${errorMsg}`);
+  }
+
   try {
     const url = getGoogleOAuthUrl(req);
     res.redirect(url);
