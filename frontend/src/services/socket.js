@@ -4,7 +4,8 @@ let socket = null;
 
 export function getSocket() {
   if (!socket) {
-    socket = io({
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || undefined;
+    socket = io(socketUrl, {
       withCredentials: true,
       autoConnect: false, // connect manually when user is authenticated
     });

@@ -20,8 +20,8 @@ async function start() {
   const httpServer = http.createServer(app);
   initializeSocket(httpServer);
 
-  httpServer.listen(env.port, () => {
-    console.log(`[Server] DevCollab API running on http://localhost:${env.port}`);
+  httpServer.listen(env.port, "0.0.0.0", () => {
+    console.log(`[Server] DevCollab API running on port ${env.port}`);
     console.log(`[Server] Socket.IO attached to the same server`);
     console.log(`[Server] Environment: ${env.nodeEnv}`);
   });

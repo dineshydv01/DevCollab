@@ -19,6 +19,10 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const googleAuthUrl = import.meta.env.VITE_API_URL
+    ? `${import.meta.env.VITE_API_URL}/auth/google`
+    : "/api/auth/google";
+
   function handleChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
@@ -72,7 +76,7 @@ export default function RegisterPage() {
           {/* Google OAuth Button */}
           <div className="mt-6">
             <a
-              href="/api/auth/google"
+              href={googleAuthUrl}
               className="inline-flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-white py-2.5 px-4 text-xs font-semibold text-ink shadow-2xs hover:bg-bg-subtle transition-colors cursor-pointer"
             >
               <GoogleIcon className="h-4 w-4" />

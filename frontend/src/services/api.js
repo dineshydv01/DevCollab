@@ -5,8 +5,10 @@ import axios from "axios";
 // HTTP-only JWT cookie with every request (set up on the backend
 // back in Phase 3) — forgetting this on even one call would silently
 // break auth for that call.
+const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
+
 export const api = axios.create({
-  baseURL: "/api", // proxied to http://localhost:5000/api in dev (see vite.config.js)
+  baseURL: apiBaseUrl,
   withCredentials: true,
 });
 
