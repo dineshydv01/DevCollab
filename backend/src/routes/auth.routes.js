@@ -4,10 +4,6 @@ import {
   login,
   logout,
   getMe,
-  githubAuthRedirect,
-  githubAuthCallback,
-  googleAuthRedirect,
-  googleAuthCallback,
 } from "../controllers/auth.controller.js";
 import { validate } from "../middleware/validate.js";
 import { registerSchema, loginSchema } from "../validators/auth.validator.js";
@@ -27,18 +23,6 @@ router.post("/logout", logout);
 
 // GET /api/auth/me
 router.get("/me", authenticate, getMe);
-
-// --- OAuth: GitHub ---
-// GET /api/auth/github
-router.get("/github", githubAuthRedirect);
-// GET /api/auth/github/callback
-router.get("/github/callback", githubAuthCallback);
-
-// --- OAuth: Google ---
-// GET /api/auth/google
-router.get("/google", googleAuthRedirect);
-// GET /api/auth/google/callback
-router.get("/google/callback", googleAuthCallback);
 
 export default router;
 

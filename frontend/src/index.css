@@ -33,3 +33,20 @@ h3,
 h4 {
   font-family: var(--font-display);
 }
+
+/* Interactive elements default cursor behavior */
+button,
+[role="button"],
+a,
+summary,
+select {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+button[disabled],
+input[type="submit"]:disabled,
+input[type="button"]:disabled {
+  cursor: not-allowed;
+}

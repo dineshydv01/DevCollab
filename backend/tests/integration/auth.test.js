@@ -65,4 +65,14 @@ describe("Auth: registration and login", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.email).toBe(EMAIL);
   });
+
+  it("logs out and clears the authentication cookie", async () => {
+    const res = await request(app).post("/api/auth/logout").set("Cookie", cookie);
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    const setCookie = res.headers["set-cookie"];
+    expect(setCookie).toBeDefined();
+    // Cookie should have empty value or expire in the past
+    expect(setCookie[0]).toMatch(/devcollab_token=;/);
+  });
 });
