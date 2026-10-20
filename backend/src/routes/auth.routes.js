@@ -4,6 +4,8 @@ import {
   login,
   logout,
   getMe,
+  googleAuthRedirect,
+  googleAuthCallback,
 } from "../controllers/auth.controller.js";
 import { validate } from "../middleware/validate.js";
 import { registerSchema, loginSchema } from "../validators/auth.validator.js";
@@ -23,6 +25,12 @@ router.post("/logout", logout);
 
 // GET /api/auth/me
 router.get("/me", authenticate, getMe);
+
+// --- Google OAuth ---
+// GET /api/auth/google
+router.get("/google", googleAuthRedirect);
+// GET /api/auth/google/callback
+router.get("/google/callback", googleAuthCallback);
 
 export default router;
 

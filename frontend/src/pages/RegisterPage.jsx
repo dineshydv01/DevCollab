@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import Input from "../components/ui/Input.jsx";
 import Button from "../components/ui/Button.jsx";
+import { GoogleIcon } from "../components/ui/Icons.jsx";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -68,7 +69,27 @@ export default function RegisterPage() {
             </Link>
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+          {/* Google OAuth Button */}
+          <div className="mt-6">
+            <a
+              href="/api/auth/google"
+              className="inline-flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-white py-2.5 px-4 text-xs font-semibold text-ink shadow-2xs hover:bg-bg-subtle transition-colors cursor-pointer"
+            >
+              <GoogleIcon className="h-4 w-4" />
+              Sign up with Google
+            </a>
+          </div>
+
+          <div className="relative my-6 text-center text-xs text-ink-muted">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <span className="relative bg-white px-2 uppercase font-mono text-[10px]">
+              or with credentials
+            </span>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               id="fullName"
               name="fullName"

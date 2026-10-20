@@ -2,6 +2,12 @@ import { User } from "../models/User.model.js";
 import { generateAccessToken } from "../utils/jwt.js";
 import { AUTH_COOKIE_NAME, getAuthCookieOptions } from "../utils/cookieOptions.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import {
+  getGoogleOAuthUrl,
+  handleGoogleCallback,
+  getOrCreateDevGoogleUser,
+} from "../services/oauth.service.js";
+import { env } from "../config/env.js";
 
 export const register = asyncHandler(async function register(req, res) {
   const { fullName, username, email, password } = req.body;
@@ -68,5 +74,51 @@ export const logout = asyncHandler(async function logout(req, res) {
 
 export const getMe = asyncHandler(async function getMe(req, res) {
   res.status(200).json({ success: true, data: req.user });
+});
+
+export const googleAuthRedirect = asyncHandler(async function googleAuthRedirect(req, res) {
+  if (!env.googleClientId || !env.googleClientSecret) {
+    if (env.nodeEnv === "development") {
+      const user = await getOrCreateDevGoogleUser();
+      const token = generateAccessToken(user._id);
+      res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions());
+      return res.redirect(`${env.clientUrl}/dashboard`);
+    }
+    const errorMsg = encodeURIComponent(
+      "Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend/.env"
+    );
+    return res.redirect(`${env.clientUrl}/login?error=${errorMsg}`);
+  }
+
+  try {
+    const url = getGoogleOAuthUrl(req);
+    res.redirect(url);
+  } catch (err) {
+    const errorMsg = encodeURIComponent(err.message || "Failed to start Google login");
+    res.redirect(`${env.clientUrl}/login?error=${errorMsg}`);
+  }
+});
+
+export const googleAuthCallback = asyncHandler(async function googleAuthCallback(req, res) {
+  const { code, error } = req.query;
+  if (error || !code) {
+    const errorMsg = encodeURIComponent(error || "Google authorization was cancelled");
+    return res.redirect(`${env.clientUrl}/login?error=${errorMsg}`);
+  }
+
+  try {
+    const user = await handleGoogleCallback(code, req);
+    if (user.isSuspended) {
+      return res.redirect(
+        `${env.clientUrl}/login?error=${encodeURIComponent("This account has been suspended")}`
+      );
+    }
+    const token = generateAccessToken(user._id);
+    res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions());
+    res.redirect(`${env.clientUrl}/dashboard`);
+  } catch (err) {
+    const errorMsg = encodeURIComponent(err.message || "Google login failed");
+    res.redirect(`${env.clientUrl}/login?error=${errorMsg}`);
+  }
 });
 
