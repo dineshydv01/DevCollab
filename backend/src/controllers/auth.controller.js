@@ -5,7 +5,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   getGoogleOAuthUrl,
   handleGoogleCallback,
-  getOrCreateDevGoogleUser,
 } from "../services/oauth.service.js";
 import { env } from "../config/env.js";
 
@@ -78,12 +77,6 @@ export const getMe = asyncHandler(async function getMe(req, res) {
 
 export const googleAuthRedirect = asyncHandler(async function googleAuthRedirect(req, res) {
   if (!env.googleClientId || !env.googleClientSecret) {
-    if (env.nodeEnv === "development") {
-      const user = await getOrCreateDevGoogleUser();
-      const token = generateAccessToken(user._id);
-      res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions());
-      return res.redirect(`${env.clientUrl}/dashboard`);
-    }
     const errorMsg = encodeURIComponent(
       "Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend/.env"
     );
